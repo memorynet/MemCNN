@@ -39,11 +39,11 @@ class PCNN_ATT(nn.Module):
         # self.conv_bias_1 = nn.Parameter(torch.zeros(1, self.out_c),requires_grad=True)
         # self.conv_bias_2 = nn.Parameter(torch.zeros(1, self.out_c),requires_grad=True)
         #
-        # self.r_embed = nn.Parameter(torch.zeros(self.n_rel, self.feature_size), requires_grad=True)
-        # self.r_bias = nn.Parameter(torch.zeros(self.n_rel), requires_grad=True)
+        self.r_embed = nn.Parameter(torch.zeros(self.n_rel, self.feature_size), requires_grad=True)
+        self.r_bias = nn.Parameter(torch.zeros(self.n_rel), requires_grad=True)
         #
         # self.tanh = nn.Tanh()
-        # self.dropout = nn.Dropout(settings['dropout_p'])
+        self.dropout = nn.Dropout(settings['dropout_p'])
         self.pred_sm = nn.LogSoftmax(dim=-1)
         self.atten_sm = nn.Softmax(dim=-1)
         # self.limit = 30
@@ -58,14 +58,14 @@ class PCNN_ATT(nn.Module):
         self.att_W = nn.Parameter(eye.expand(self.n_rel, self.feature_size, self.feature_size), requires_grad=True)
         #
         # # init
-        # con = math.sqrt(6.0/(self.out_c + self.n_rel))
+        con = math.sqrt(6.0/(self.feature_size + self.n_rel))
         # con1 = math.sqrt(6.0 / ((self.pos_embed_size + self.word_embed_size)*self.window))
         # nn.init.uniform_(self.conv.weight, a=-con1, b=con1)
         # nn.init.uniform_(self.conv_bias_0, a=-con1, b=con1)
         # nn.init.uniform_(self.conv_bias_1, a=-con1, b=con1)
         # nn.init.uniform_(self.conv_bias_2, a=-con1, b=con1)
-        # nn.init.uniform_(self.r_embed, a=-con, b=con)
-        # nn.init.uniform_(self.r_bias, a=-con, b=con)
+        nn.init.uniform_(self.r_embed, a=-con, b=con)
+        nn.init.uniform_(self.r_bias, a=-con, b=con)
         self.pcnn = PCNN(settings)
 
     def forward(self, input):
@@ -89,17 +89,17 @@ class PCNN_ATT(nn.Module):
     def fusion(self, features):
         ret = []
         for feature in features:
-            atten_weights = self.atten_sm(torch.bmm(self.pcnn.r_embed.unsqueeze(1),
+            atten_weights = self.atten_sm(torch.bmm(self.r_embed.unsqueeze(1),
                                                     torch.matmul(self.att_W, feature.t())).squeeze(1))
             # to this point, features is actually s
             # n_rel * D
             feature = torch.matmul(atten_weights, feature)
-            if self.dropout is not None:
+            if self.pcnn.dropout is not None:
                 feature = self.dropout(feature)
                 if not self.training:
                     feature = feature * 0.5
             ret.append(feature)
-        return torch.cat(ret, dim=0)
+        return torch.stack(ret)
 
 
     def _create_sentence_embedding(self, bags, labels):
