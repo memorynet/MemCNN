@@ -2,9 +2,9 @@
 
 BATCH_SIZE=32
 MODEL=CNN_AVE
-MAX_HOPS=5
-DEVICE=6
-VERSION=1
+MAX_HOPS=2
+DEVICE=7
+VERSION=0
 N_EPOCHS=50
 QUERY_TYPE=RELATION
 DECAY_RATIO=0.5
@@ -13,13 +13,13 @@ DECAY_RATIO=0.5
 #lr=0.00075
 #lr=5e-4
 lr=0.01
-DATA_ROOT=/data/yanjianhao/nlp/torch/torch_NRE/data
+DATA_ROOT=./data
 
 CUDA_VISIBLE_DEVICES=$DEVICE python trainer.py --model=$MODEL \
                                                 --dataset_dir=$DATA_ROOT \
                                                 --cuda \
-                                                --order_embed \
                                                 --position_embedding \
+                                                --order_embed \
                                                 --max_hops=$MAX_HOPS \
                                                 --batch_size=$BATCH_SIZE \
                                                 --mem_version=$VERSION \
